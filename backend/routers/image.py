@@ -15,6 +15,7 @@ from sqlalchemy.orm import selectinload
 from config import settings
 from database import get_db, DatasetImage, DatasetLabel, SysUser, OperationLog
 from routers.auth import get_current_user
+from services.cache_service import cache_service
 
 import logging
 import os
@@ -353,6 +354,16 @@ async def get_stats(
     current_user: SysUser = Depends(get_current_user)
 ):
     """获取图片统计信息"""
+    # 尝试从缓存获取
+    cache_key = "image_stats"
+    cached = await cache_service.get(cache_key)
+    if cached:
+        logger.debug("统计信息缓存命中")
+        return cached
+
+    # 缓存未命中，查询数据库
+    logger.debug("统计信息缓存未命中，查询数据库")
+
     # 总数
     total_result = await db.execute(select(func.count(DatasetImage.id)))
     total = total_result.scalar()
@@ -374,8 +385,13 @@ async def get_stats(
     )
     today_count = today_result.scalar()
 
-    return {
+    result = {
         "total": total,
         "status_stats": status_stats,
         "today_upload": today_count,
     }
+
+    # 写入缓存（5分钟过期）
+    await cache_service.set(cache_key, result, expire=300)
+
+    return result

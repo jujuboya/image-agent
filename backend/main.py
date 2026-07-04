@@ -15,6 +15,7 @@ from config import settings
 from database import init_db
 from routers import upload, label, image, dataset, auth
 from services.queue_service import QueueService
+from services.cache_service import cache_service
 
 import logging
 
@@ -46,6 +47,13 @@ async def lifespan(app: FastAPI):
     await init_db()
     logger.info("数据库初始化完成")
 
+    # 初始化Redis缓存
+    await cache_service.connect()
+    if cache_service.redis:
+        logger.info("Redis缓存初始化完成")
+    else:
+        logger.warning("Redis不可用，将以无缓存模式运行")
+
     # 初始化消息队列
     try:
         queue_service = QueueService()
@@ -59,6 +67,7 @@ async def lifespan(app: FastAPI):
     yield
 
     # 清理资源
+    await cache_service.close()
     if app.state.queue_service:
         await app.state.queue_service.close()
     logger.info("系统已关闭")
