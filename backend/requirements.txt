@@ -1,0 +1,58 @@
+# 图片数据集智能采集Agent系统 - Python依赖
+
+# Web框架
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# 数据库
+sqlalchemy==2.0.25
+aiomysql==0.2.0
+alembic==1.13.1
+
+# Redis
+redis[hiredis]==5.0.1
+
+# RabbitMQ
+aio-pika==9.3.1
+
+# 对象存储
+minio==7.2.3
+
+# 图像处理
+Pillow==10.2.0
+exifread==3.0.0
+
+# 地理编码
+geopy==2.4.1
+
+# 数据处理
+pandas==2.1.4
+numpy==1.26.3
+
+# JWT认证
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 配置管理
+pydantic==2.5.3
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# HTTP客户端
+httpx==0.26.0
+
+# 任务队列
+celery==5.3.6
+
+# 日志
+loguru==0.7.2
+
+# 工具
+python-dateutil==2.8.2
+aiofiles==23.2.1
+
+# AI模型（可选）
+# torch==2.1.2
+# torchvision==0.16.2
+# ultralytics==8.1.0
