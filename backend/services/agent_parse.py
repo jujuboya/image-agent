@@ -12,6 +12,7 @@ import httpx
 from geopy.geocoders import Nominatim
 
 from config import settings, LabelEnums
+from services.ai_service import ai_service
 from utils.exif_utils import ExifUtils
 from utils.file_utils import FileUtils
 
@@ -59,13 +60,24 @@ class AgentParseService:
             )
             logger.info(f"天气匹配完成: {weather_info}")
 
-        # 4. 画质检测
-        quality_info = self.detect_quality(file_path)
-        logger.info(f"画质检测完成: {quality_info}")
+        # 4. AI画质检测
+        quality_info = await ai_service.detect_quality(file_path)
+        logger.info(f"AI画质检测完成: {quality_info}")
 
-        # 5. 场景识别（简化版，可接入AI模型）
-        scene_info = self.detect_scene_simple(file_path)
-        logger.info(f"场景识别完成: {scene_info}")
+        # 5. AI场景识别
+        ai_scene = await ai_service.recognize_scene(file_path)
+        logger.info(f"AI场景识别完成: {ai_scene}")
+
+        # 转换AI场景结果为统一格式（兼容generate_standard_labels）
+        scene_info = {
+            'scene_type': ai_scene.get('scene_type', '其他'),
+            'ai_labels': [
+                {'category': p['category'], 'confidence': p['confidence']}
+                for p in ai_scene.get('predictions', [])
+            ],
+            'objects': [],
+            'confidence': ai_scene.get('confidence', 0.0),
+        }
 
         # 合并结果
         result = {

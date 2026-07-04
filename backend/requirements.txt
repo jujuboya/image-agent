@@ -52,7 +52,7 @@ loguru==0.7.2
 python-dateutil==2.8.2
 aiofiles==23.2.1
 
-# AI模型（可选）
-# torch==2.1.2
-# torchvision==0.16.2
-# ultralytics==8.1.0
+# AI模型
+torch>=2.0.0
+torchvision>=0.15.0
+opencv-python>=4.8.0
