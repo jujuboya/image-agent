@@ -75,8 +75,8 @@ class LabelResponse(BaseModel):
     city: Optional[str]
     district: Optional[str]
     address: Optional[str]
-    ai_scene_labels: Optional[dict]
-    ai_objects: Optional[dict]
+    ai_scene_labels: Optional[list]
+    ai_objects: Optional[list]
     ai_quality_score: Optional[float]
     source: str
     created_at: datetime
