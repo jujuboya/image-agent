@@ -8,14 +8,14 @@ from typing import Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import select, func, and_, or_
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from config import settings
-from database import get_db, DatasetImage, DatasetLabel, SysUser, OperationLog
+from database import get_db, DatasetImage, SysUser, OperationLog
 from routers.auth import get_current_user
 from services.cache_service import cache_service
+from services.image_service import image_service
 
 import logging
 import os
@@ -94,47 +94,16 @@ async def list_images(
     current_user: SysUser = Depends(get_current_user)
 ):
     """获取图片列表（支持多条件筛选）"""
-    # 构建查询
-    query = select(DatasetImage)
-    count_query = select(func.count(DatasetImage.id))
-
-    # 筛选条件
-    conditions = []
-
-    if status:
-        conditions.append(DatasetImage.status == status)
-
-    if check_status:
-        conditions.append(DatasetImage.check_status == check_status)
-
-    if keyword:
-        conditions.append(
-            or_(
-                DatasetImage.original_filename.contains(keyword),
-                DatasetImage.image_uuid.contains(keyword),
-            )
-        )
-
-    if conditions:
-        query = query.where(and_(*conditions))
-        count_query = count_query.where(and_(*conditions))
-
-    # 获取总数
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-
-    # 分页查询
-    query = query.order_by(DatasetImage.created_at.desc())
-    query = query.offset((page - 1) * page_size).limit(page_size)
-
-    result = await db.execute(query)
-    images = result.scalars().all()
-
-    return ImageListResponse(
-        total=total,
+    return await image_service.get_image_list(
+        db,
         page=page,
         page_size=page_size,
-        items=images
+        status=status,
+        check_status=check_status,
+        scene_type=scene_type,
+        weather=weather,
+        season=season,
+        keyword=keyword,
     )
 
 
@@ -145,12 +114,7 @@ async def get_image(
     current_user: SysUser = Depends(get_current_user)
 ):
     """获取图片详情"""
-    result = await db.execute(
-        select(DatasetImage)
-        .options(selectinload(DatasetImage.labels))
-        .where(DatasetImage.id == image_id)
-    )
-    image = result.scalar_one_or_none()
+    image = await image_service.get_image_detail(db, image_id)
 
     if not image:
         raise HTTPException(status_code=404, detail="图片不存在")

@@ -3,8 +3,6 @@
 数据集管理路由
 """
 
-import csv
-import io
 import json
 import os
 import zipfile
@@ -21,6 +19,7 @@ from sqlalchemy.orm import selectinload
 from config import settings, LabelEnums
 from database import get_db, DatasetImage, DatasetLabel, DatasetVersion, SysUser
 from routers.auth import get_current_user
+from services.export_service import export_service
 
 import logging
 
@@ -109,7 +108,14 @@ async def export_dataset(
 
     # 根据格式导出
     if export_request.format == "csv":
-        return await _export_csv(images, version_name)
+        csv_content = export_service.export_csv(images, version_name)
+        return StreamingResponse(
+            iter([csv_content]),
+            media_type="text/csv",
+            headers={
+                "Content-Disposition": f"attachment; filename={version_name}.csv"
+            }
+        )
     elif export_request.format == "json":
         return await _export_json(images, version_name)
     elif export_request.format == "yolo":
@@ -118,68 +124,6 @@ async def export_dataset(
         return await _export_coco(images, db, version_name)
     elif export_request.format == "voc":
         return await _export_voc(images, db, version_name)
-
-
-async def _export_csv(images: list, version_name: str) -> StreamingResponse:
-    """导出CSV格式"""
-    output = io.StringIO()
-    writer = csv.writer(output)
-
-    # 写入表头
-    headers = [
-        "image_id", "filename", "width", "height",
-        "year", "month", "day", "hour", "season", "time_period", "day_type",
-        "weather", "temperature", "humidity", "light",
-        "shoot_angle", "scene_scale", "clarity", "exposure",
-        "scene_type", "device_type",
-        "province", "city", "district", "address",
-        "longitude", "latitude"
-    ]
-    writer.writerow(headers)
-
-    # 写入数据
-    for image in images:
-        label = image.labels if image.labels else None
-        row = [
-            image.id,
-            image.original_filename,
-            image.width,
-            image.height,
-            label.year if label else None,
-            label.month if label else None,
-            label.day if label else None,
-            label.hour if label else None,
-            label.season if label else None,
-            label.time_period if label else None,
-            label.day_type if label else None,
-            label.weather if label else None,
-            label.temperature if label else None,
-            label.humidity if label else None,
-            label.light if label else None,
-            label.shoot_angle if label else None,
-            label.scene_scale if label else None,
-            label.clarity if label else None,
-            label.exposure if label else None,
-            label.scene_type if label else None,
-            label.device_type if label else None,
-            label.province if label else None,
-            label.city if label else None,
-            label.district if label else None,
-            label.address if label else None,
-            label.longitude if label else None,
-            label.latitude if label else None,
-        ]
-        writer.writerow(row)
-
-    output.seek(0)
-
-    return StreamingResponse(
-        iter([output.getvalue()]),
-        media_type="text/csv",
-        headers={
-            "Content-Disposition": f"attachment; filename={version_name}.csv"
-        }
-    )
 
 
 async def _export_json(images: list, version_name: str) -> StreamingResponse:
