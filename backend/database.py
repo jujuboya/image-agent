@@ -26,7 +26,7 @@ engine = create_async_engine(
     echo=settings.DEBUG,
     pool_size=20,
     max_overflow=10,
-    pool_pre_ping=True,
+    pool_pre_ping=False,  # Disabled due to aiomysql 0.2.0 compatibility issue
 )
 
 # 创建异步会话工厂
@@ -86,7 +86,7 @@ class SysUser(Base):
     last_login = Column(DateTime, comment="最后登录时间")
 
     # 关系
-    images = relationship("DatasetImage", back_populates="uploader")
+    images = relationship("DatasetImage", foreign_keys="DatasetImage.uploader_id", back_populates="uploader")
     labels = relationship("DatasetLabel", back_populates="creator")
 
     __table_args__ = (
