@@ -41,7 +41,7 @@ class FileUtils:
         """
         md5_hash = hashlib.md5()
         with open(file_path, "rb") as f:
-            for chunk in iter(lambda: 8192, b""):
+            for chunk in iter(lambda: f.read(8192), b""):
                 md5_hash.update(chunk)
         return md5_hash.hexdigest()
 
