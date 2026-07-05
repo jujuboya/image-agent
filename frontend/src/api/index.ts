@@ -36,8 +36,11 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401:
-          localStorage.removeItem('token')
-          window.location.href = '/login'
+          ElMessage.error(data.detail || '用户名或密码错误')
+          if (window.location.pathname !== '/login') {
+            localStorage.removeItem('token')
+            window.location.href = '/login'
+          }
           break
         case 403:
           ElMessage.error('权限不足')

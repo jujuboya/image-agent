@@ -104,6 +104,14 @@
     </div>
 
     <!-- 版本历史 -->
+    <div v-if="lastExport" class="export-result">
+      <div class="result-title">最近导出</div>
+      <div class="result-detail">
+        {{ lastExport.versionName }} · {{ lastExport.format.toUpperCase() }} · {{ lastExport.time }}
+      </div>
+      <div class="result-hint">文件已开始下载，版本历史已刷新。</div>
+    </div>
+
     <div class="version-card">
       <div class="card-header">
         <div class="card-title">
@@ -150,6 +158,7 @@ const exporting = ref(false)
 const versions = ref<any[]>([])
 const stats = ref<any>({})
 const enums = ref<any>({})
+const lastExport = ref<{ versionName: string; format: string; time: string } | null>(null)
 
 const formats = [
   { value: 'yolo', label: 'YOLO', icon: '🎯' },
@@ -221,8 +230,13 @@ const handleExport = async () => {
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
 
-    ElMessage.success('导出成功')
-    loadData()
+    lastExport.value = {
+      versionName: exportForm.version_name || `dataset_${exportForm.format}_${dayjs().format('YYYYMMDD')}`,
+      format: exportForm.format,
+      time: dayjs().format('YYYY-MM-DD HH:mm:ss'),
+    }
+    ElMessage.success('导出成功，版本历史已刷新')
+    await loadData()
   } catch (error) {
     ElMessage.error('导出失败')
   } finally {
@@ -321,6 +335,32 @@ const formatDate = (date: string) => {
   border-radius: 16px;
   padding: 24px;
   margin-bottom: 24px;
+}
+
+.export-result {
+  margin-bottom: 24px;
+  padding: 18px 20px;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.result-title {
+  color: #34d399;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.result-detail {
+  color: #f1f5f9;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.result-hint {
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 .card-header {

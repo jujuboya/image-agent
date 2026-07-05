@@ -58,7 +58,7 @@
           <span class="btn-text">{{ uploading ? (t('user.login') === 'Login' ? 'Uploading...' : '上传中...') : (t('user.login') === 'Login' ? 'Start Upload' : '开始上传') }}</span>
           <span class="btn-badge">{{ fileList.length }}</span>
         </button>
-        <button class="upload-btn secondary" @click="handleClear">
+        <button class="upload-btn secondary" :disabled="fileList.length === 0 && uploadResults.length === 0" @click="handleClear">
           <span class="btn-icon">✕</span>
           <span class="btn-text">{{ t('user.login') === 'Login' ? 'Clear List' : '清空列表' }}</span>
         </button>
@@ -101,17 +101,25 @@
           </div>
         </div>
       </div>
+
+      <div v-if="successfulUploads > 0" class="next-actions">
+        <span class="next-tip">上传成功 {{ successfulUploads }} 张，系统正在解析标签。</span>
+        <button class="next-btn" @click="router.push('/images')">查看图片</button>
+        <button class="next-btn secondary" @click="router.push('/review')">去审核</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
 import { uploadApi } from '@/api'
 import { t } from '../utils/i18n'
 
+const router = useRouter()
 const uploadRef = ref<UploadInstance>()
 const fileList = ref<UploadFile[]>([])
 const uploading = ref(false)
@@ -123,6 +131,7 @@ const overallProgress = computed(() => {
   if (fileList.value.length === 0) return 0
   return Math.round((uploadedCount.value / fileList.value.length) * 100)
 })
+const successfulUploads = computed(() => uploadResults.value.filter(r => r.status === 'parsing').length)
 
 const handleFileChange = (file: UploadFile) => {
   // 验证文件类型
@@ -353,9 +362,52 @@ const handleUpload = async () => {
     background: #1e293b;
     color: #94a3b8;
 
-    &:hover {
+    &:hover:not(:disabled) {
       background: #334155;
       color: #f1f5f9;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.next-actions {
+  margin-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.next-tip {
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+.next-btn {
+  border: 1px solid #3b82f6;
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.22);
+  }
+
+  &.secondary {
+    border-color: #10b981;
+    background: rgba(16, 185, 129, 0.12);
+    color: #34d399;
+
+    &:hover {
+      background: rgba(16, 185, 129, 0.22);
     }
   }
 }

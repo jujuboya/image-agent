@@ -195,9 +195,11 @@ const handleLogin = async () => {
   try {
     const res: any = await authApi.login(form.username, form.password)
     localStorage.setItem('token', res.access_token)
-    localStorage.setItem('username', form.username)
+    const user: any = await authApi.getMe()
+    localStorage.setItem('username', user.nickname || user.username)
+    localStorage.setItem('userRole', user.role || 'viewer')
     ElMessage.success('登录成功')
-    router.push('/')
+    await router.replace('/dashboard')
   } catch (error) {
     // 错误已在拦截器中处理
   } finally {
@@ -478,14 +480,27 @@ const handleRegister = async () => {
     background: transparent !important;
     box-shadow: none !important;
     padding: 12px 0;
+    width: 100%;
   }
 
   :deep(.el-input__inner) {
+    background: transparent !important;
     color: var(--text-primary);
     font-family: 'JetBrains Mono', monospace;
 
     &::placeholder {
       color: var(--text-tertiary);
+    }
+
+    &:-webkit-autofill,
+    &:-webkit-autofill:hover,
+    &:-webkit-autofill:focus,
+    &:-webkit-autofill:active {
+      -webkit-text-fill-color: var(--text-primary) !important;
+      caret-color: var(--text-primary);
+      box-shadow: 0 0 0 1000px var(--bg-tertiary) inset !important;
+      transition: background-color 9999s ease-out 0s;
+      font-family: 'JetBrains Mono', monospace;
     }
   }
 }

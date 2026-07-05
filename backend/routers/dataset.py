@@ -106,6 +106,15 @@ async def export_dataset(
     version_code = datetime.now().strftime("%Y%m%d_%H%M%S")
     version_name = export_request.version_name or f"v_{version_code}"
 
+    await _create_version_record(
+        db=db,
+        current_user=current_user,
+        export_request=export_request,
+        version_name=version_name,
+        version_code=version_code,
+        images=images,
+    )
+
     # 根据格式导出
     if export_request.format == "csv":
         csv_content = export_service.export_csv(images, version_name)
@@ -124,6 +133,35 @@ async def export_dataset(
         return await _export_coco(images, db, version_name)
     elif export_request.format == "voc":
         return await _export_voc(images, db, version_name)
+
+
+async def _create_version_record(
+    db: AsyncSession,
+    current_user: SysUser,
+    export_request: ExportRequest,
+    version_name: str,
+    version_code: str,
+    images: list,
+) -> None:
+    label_distribution: dict[str, int] = {}
+    for image in images:
+        if image.labels and image.labels.scene_type:
+            label_distribution[image.labels.scene_type] = label_distribution.get(image.labels.scene_type, 0) + 1
+
+    version = DatasetVersion(
+        version_name=version_name,
+        version_code=version_code,
+        description=export_request.description,
+        total_images=len(images),
+        total_labels=sum(label_distribution.values()),
+        label_distribution=label_distribution,
+        filter_conditions=export_request.filters,
+        export_format=export_request.format,
+        status="ready",
+        creator_id=current_user.id,
+    )
+    db.add(version)
+    await db.commit()
 
 
 async def _export_json(images: list, version_name: str) -> StreamingResponse:

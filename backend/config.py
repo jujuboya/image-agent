@@ -99,7 +99,7 @@ class Settings(BaseSettings):
     QUALITY_MODEL_PATH: Optional[str] = None  # 画质检测模型路径
 
     class Config:
-        env_file = ".env"
+        env_file = Path(__file__).parent / ".env"
         env_file_encoding = "utf-8"
 
 

@@ -75,7 +75,7 @@
               </div>
               <div class="user-details">
                 <span class="username">{{ username }}</span>
-                <span class="user-role">管理员</span>
+                <span class="user-role">{{ roleLabel }}</span>
               </div>
               <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
             </div>
@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getTheme, setTheme, applyTheme, type ThemeMode } from '../utils/theme'
@@ -152,14 +152,20 @@ const router = useRouter()
 
 const isCollapse = ref(false)
 const username = ref(localStorage.getItem('username') || '用户')
+const userRole = ref(localStorage.getItem('userRole') || 'viewer')
 const showSettings = ref(false)
-const unreadCount = ref(3)
+const unreadCount = ref(0)
 
-const notifications = ref([
-  { id: 1, title: '系统更新', content: '系统已更新到最新版本', time: '2分钟前', read: false },
-  { id: 2, title: '图片解析完成', content: '3张图片已自动解析完成', time: '10分钟前', read: false },
-  { id: 3, title: '数据集导出', content: 'YOLO格式数据集导出成功', time: '1小时前', read: false },
-])
+const notifications = ref<any[]>([])
+
+const roleLabel = computed(() => {
+  const labels: Record<string, string> = {
+    admin: '管理员',
+    editor: '编辑员',
+    viewer: '查看者',
+  }
+  return labels[userRole.value] || userRole.value
+})
 
 const themeMode = ref<ThemeMode>(getTheme())
 const language = ref<Language>(getLanguage())
@@ -193,6 +199,7 @@ const handleCommand = (command: string) => {
   if (command === 'logout') {
     localStorage.removeItem('token')
     localStorage.removeItem('username')
+    localStorage.removeItem('userRole')
     router.push('/login')
   } else if (command === 'profile') {
     ElMessage.info('个人中心功能开发中...')
@@ -202,6 +209,10 @@ const handleCommand = (command: string) => {
 }
 
 const showNotifications = () => {
+  if (notifications.value.length === 0) {
+    ElMessage.info('暂无新的系统通知')
+    return
+  }
   ElMessageBox.alert(
     notifications.value.map(n => `【${n.title}】${n.content} - ${n.time}`).join('\n\n'),
     '消息通知',

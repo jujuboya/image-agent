@@ -131,6 +131,15 @@
         </el-table-column>
       </el-table>
 
+      <div v-if="!loading && imageList.length === 0" class="review-empty">
+        <div class="empty-title">暂无待审核图片</div>
+        <div class="empty-desc">可以先上传图片，或到图片管理查看已经完成审核的数据。</div>
+        <div class="empty-actions">
+          <button class="empty-btn primary" @click="router.push('/upload')">去上传</button>
+          <button class="empty-btn" @click="router.push('/images')">查看图片管理</button>
+        </div>
+      </div>
+
       <!-- 分页 -->
       <div class="pagination">
         <div class="pagination-info">
@@ -490,6 +499,55 @@ const getImageUrl = (filePath: string) => {
         color: #f1f5f9;
       }
     }
+  }
+}
+
+.review-empty {
+  margin-top: 16px;
+  padding: 32px;
+  text-align: center;
+  border: 1px dashed #334155;
+  border-radius: 12px;
+  background: #0f172a;
+}
+
+.empty-title {
+  color: #f1f5f9;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-desc {
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.empty-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.empty-btn {
+  border: 1px solid #334155;
+  background: #1e293b;
+  color: #cbd5e1;
+  border-radius: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+
+  &:hover {
+    border-color: #3b82f6;
+    color: #60a5fa;
+  }
+
+  &.primary {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.12);
+    color: #60a5fa;
   }
 }
 

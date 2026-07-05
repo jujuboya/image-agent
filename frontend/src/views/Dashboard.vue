@@ -10,10 +10,6 @@
           <div class="card-value">{{ stat.value }}</div>
           <div class="card-label">{{ stat.label }}</div>
         </div>
-        <div class="card-trend" :class="stat.trendType">
-          <el-icon><component :is="stat.trendIcon" /></el-icon>
-          <span>{{ stat.trend }}</span>
-        </div>
       </div>
     </div>
 
@@ -31,7 +27,8 @@
             <el-button size="small" text>本年</el-button>
           </div>
         </div>
-        <div ref="sceneChartRef" class="chart-container"></div>
+        <div v-if="hasSceneData" ref="sceneChartRef" class="chart-container"></div>
+        <div v-else class="empty-chart">暂无场景数据，上传并审核图片后会生成分布图</div>
       </div>
 
       <div class="chart-card">
@@ -46,7 +43,8 @@
             <el-button size="small" text>本年</el-button>
           </div>
         </div>
-        <div ref="weatherChartRef" class="chart-container"></div>
+        <div v-if="hasWeatherData" ref="weatherChartRef" class="chart-container"></div>
+        <div v-else class="empty-chart">暂无天气数据，上传并审核图片后会生成分布图</div>
       </div>
     </div>
 
@@ -107,7 +105,7 @@
           </div>
           <el-button size="small" text type="primary">查看全部</el-button>
         </div>
-        <div class="activity-list">
+        <div v-if="recentActivities.length > 0" class="activity-list">
           <div v-for="(activity, index) in recentActivities" :key="index" class="activity-item">
             <div class="activity-dot" :class="activity.type"></div>
             <div class="activity-content">
@@ -116,13 +114,16 @@
             </div>
           </div>
         </div>
+        <div v-else class="empty-activity">
+          暂无最近活动。完成上传、审核或导出后，这里会显示真实操作记录。
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { computed, ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import { imageApi, datasetApi } from '@/api'
 
@@ -130,6 +131,8 @@ const stats = ref<any>({})
 const datasetStats = ref<any>({})
 const sceneChartRef = ref<HTMLElement>()
 const weatherChartRef = ref<HTMLElement>()
+const hasSceneData = computed(() => Object.keys(datasetStats.value.scene_distribution || {}).length > 0)
+const hasWeatherData = computed(() => Object.keys(datasetStats.value.weather_distribution || {}).length > 0)
 
 const statCards = ref([
   {
@@ -137,46 +140,28 @@ const statCards = ref([
     label: '总图片数',
     value: 0,
     gradient: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-    trend: '+12%',
-    trendType: 'success',
-    trendIcon: 'Top',
   },
   {
     icon: 'Checked',
     label: '已通过',
     value: 0,
     gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-    trend: '+8%',
-    trendType: 'success',
-    trendIcon: 'Top',
   },
   {
     icon: 'Loading',
     label: '解析中',
     value: 0,
     gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-    trend: '-5%',
-    trendType: 'danger',
-    trendIcon: 'Bottom',
   },
   {
     icon: 'Delete',
     label: '已废弃',
     value: 0,
     gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-    trend: '+2%',
-    trendType: 'warning',
-    trendIcon: 'Top',
   },
 ])
 
-const recentActivities = ref([
-  { text: '上传了 15 张图片', time: '2 分钟前', type: 'upload' },
-  { text: '审核通过了 8 张图片', time: '15 分钟前', type: 'check' },
-  { text: '导出了 YOLO 格式数据集', time: '1 小时前', type: 'export' },
-  { text: '新增了 3 个标签', time: '2 小时前', type: 'label' },
-  { text: '系统备份完成', time: '3 小时前', type: 'system' },
-])
+const recentActivities = ref<any[]>([])
 
 onMounted(async () => {
   await loadData()
@@ -468,6 +453,25 @@ const initCharts = () => {
 }
 
 .chart-container {
+  height: 300px;
+}
+
+.empty-chart,
+.empty-activity {
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: var(--text-tertiary);
+  text-align: center;
+  background: var(--bg-tertiary);
+  border: 1px dashed var(--border-color);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.empty-chart {
   height: 300px;
 }
 
