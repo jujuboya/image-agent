@@ -458,6 +458,35 @@ class AgentParseService:
         labels['clarity'] = quality.get('clarity')
         labels['exposure'] = quality.get('exposure')
 
+        # 拍摄角度和景别（基于图像分析）
+        image_info = parse_result.get('image_info', {})
+        width = image_info.get('width', 0)
+        height = image_info.get('height', 0)
+
+        # 根据图片宽高比判断拍摄角度
+        if width and height:
+            aspect_ratio = width / height
+            if aspect_ratio > 1.5:
+                labels['shoot_angle'] = '平视'  # 宽屏照片通常是平视
+            elif aspect_ratio < 0.75:
+                labels['shoot_angle'] = '仰拍'  # 竖屏照片可能是仰拍
+            else:
+                labels['shoot_angle'] = '平视'  # 默认平视
+        else:
+            labels['shoot_angle'] = '平视'
+
+        # 根据图片分辨率判断景别
+        if width and height:
+            total_pixels = width * height
+            if total_pixels > 8000000:  # 800万像素以上
+                labels['scene_scale'] = '远景'
+            elif total_pixels > 2000000:  # 200万像素以上
+                labels['scene_scale'] = '中景'
+            else:
+                labels['scene_scale'] = '近景'
+        else:
+            labels['scene_scale'] = '中景'
+
         # 场景设备
         scene = parse_result.get('scene', {})
         labels['scene_type'] = scene.get('scene_type')

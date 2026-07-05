@@ -37,7 +37,11 @@ backend/uploads/*
 # Logs
 *.log
 logs/
+.runtime-logs/
 
 # Database
 *.db
 *.sqlite3
+
+# Generated exports
+backend/export.*

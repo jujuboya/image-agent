@@ -1,81 +1,107 @@
 <template>
   <div class="upload-page">
-    <el-card shadow="hover">
-      <template #header>
-        <div class="card-header">
-          <span>图片上传</span>
-          <el-tag type="info">支持 jpg、png、bmp、tiff、webp 格式，单文件最大 50MB</el-tag>
+    <!-- 页面标题 -->
+    <div class="page-header">
+      <div class="header-content">
+        <h2 class="page-title">{{ t('image.upload') }}</h2>
+        <p class="page-subtitle">{{ t('user.login') === 'Login' ? 'Support jpg, png, bmp, tiff, webp, max 50MB' : '支持 jpg、png、bmp、tiff、webp 格式，单文件最大 50MB' }}</p>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ fileList.length }}</span>
+          <span class="stat-label">{{ t('user.login') === 'Login' ? 'Selected' : '已选择' }}</span>
         </div>
-      </template>
+        <div class="stat-item">
+          <span class="stat-value">{{ uploadedCount }}</span>
+          <span class="stat-label">{{ t('user.login') === 'Login' ? 'Uploaded' : '已上传' }}</span>
+        </div>
+      </div>
+    </div>
 
-      <!-- 上传区域 -->
+    <!-- 上传区域 -->
+    <div class="upload-card">
       <el-upload
         ref="uploadRef"
         class="upload-dragger"
         drag
         multiple
         :auto-upload="false"
-        :file-list="fileList"
+        v-model:file-list="fileList"
         :on-change="handleFileChange"
         :on-remove="handleFileRemove"
         accept=".jpg,.jpeg,.png,.bmp,.tiff,.webp"
       >
-        <el-icon class="el-icon--upload"><Upload /></el-icon>
-        <div class="el-upload__text">
-          将文件拖到此处，或 <em>点击上传</em>
-        </div>
-        <template #tip>
-          <div class="el-upload__tip">
-            支持批量上传，单次最多 1000 张
+        <div class="upload-content">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M17 8L12 3L7 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 3V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
-        </template>
+          <div class="upload-text">
+            <p class="primary-text">{{ t('user.login') === 'Login' ? 'Drag files here, or' : '将文件拖到此处，或' }} <em>{{ t('user.login') === 'Login' ? 'click to upload' : '点击上传' }}</em></p>
+            <p class="secondary-text">{{ t('user.login') === 'Login' ? 'Support batch upload, max 1000 files' : '支持批量上传，单次最多 1000 张' }}</p>
+          </div>
+        </div>
       </el-upload>
 
       <!-- 上传按钮 -->
       <div class="upload-actions">
-        <el-button
-          type="primary"
-          size="large"
-          :loading="uploading"
-          :disabled="fileList.length === 0"
+        <button
+          class="upload-btn primary"
+          :disabled="fileList.length === 0 || uploading"
           @click="handleUpload"
         >
-          <el-icon><Upload /></el-icon>
-          开始上传 ({{ fileList.length }} 张)
-        </el-button>
-        <el-button size="large" @click="handleClear">清空列表</el-button>
+          <span v-if="uploading" class="btn-loading"></span>
+          <span v-else class="btn-icon">↑</span>
+          <span class="btn-text">{{ uploading ? (t('user.login') === 'Login' ? 'Uploading...' : '上传中...') : (t('user.login') === 'Login' ? 'Start Upload' : '开始上传') }}</span>
+          <span class="btn-badge">{{ fileList.length }}</span>
+        </button>
+        <button class="upload-btn secondary" @click="handleClear">
+          <span class="btn-icon">✕</span>
+          <span class="btn-text">{{ t('user.login') === 'Login' ? 'Clear List' : '清空列表' }}</span>
+        </button>
       </div>
 
       <!-- 上传进度 -->
       <div v-if="uploading" class="upload-progress">
-        <el-progress
-          :percentage="overallProgress"
-          :status="overallProgress === 100 ? 'success' : ''"
-        />
-        <p class="progress-text">
-          正在上传: {{ currentFile }} ({{ uploadedCount }}/{{ fileList.length }})
-        </p>
+        <div class="progress-bar">
+          <div class="progress-fill" :style="{ width: overallProgress + '%' }"></div>
+        </div>
+        <div class="progress-info">
+          <span class="progress-text">正在上传: {{ currentFile }}</span>
+          <span class="progress-count">{{ uploadedCount }}/{{ fileList.length }}</span>
+        </div>
       </div>
-    </el-card>
+    </div>
 
     <!-- 上传结果 -->
-    <el-card v-if="uploadResults.length > 0" shadow="hover" class="result-card">
-      <template #header>
-        <span>上传结果</span>
-      </template>
+    <div v-if="uploadResults.length > 0" class="result-card">
+      <div class="result-header">
+        <h3 class="result-title">上传结果</h3>
+        <div class="result-summary">
+          <span class="success-count">成功: {{ uploadResults.filter(r => r.status === 'parsing').length }}</span>
+          <span class="fail-count">失败: {{ uploadResults.filter(r => r.status !== 'parsing').length }}</span>
+        </div>
+      </div>
 
-      <el-table :data="uploadResults" stripe>
-        <el-table-column prop="filename" label="文件名" />
-        <el-table-column prop="status" label="状态" width="120">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'parsing' ? 'success' : 'danger'">
-              {{ row.status === 'parsing' ? '上传成功' : '失败' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="message" label="信息" />
-      </el-table>
-    </el-card>
+      <div class="result-list">
+        <div v-for="(result, index) in uploadResults" :key="index" class="result-item">
+          <div class="result-icon" :class="result.status === 'parsing' ? 'success' : 'fail'">
+            <span v-if="result.status === 'parsing'">✓</span>
+            <span v-else>✕</span>
+          </div>
+          <div class="result-content">
+            <div class="result-filename">{{ result.filename }}</div>
+            <div class="result-message">{{ result.message }}</div>
+          </div>
+          <div class="result-status" :class="result.status === 'parsing' ? 'success' : 'fail'">
+            {{ result.status === 'parsing' ? '上传成功' : '失败' }}
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -84,6 +110,7 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { UploadFile, UploadInstance } from 'element-plus'
 import { uploadApi } from '@/api'
+import { t } from '../utils/i18n'
 
 const uploadRef = ref<UploadInstance>()
 const fileList = ref<UploadFile[]>([])
@@ -102,14 +129,22 @@ const handleFileChange = (file: UploadFile) => {
   const allowedTypes = ['image/jpeg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp']
   if (file.raw && !allowedTypes.includes(file.raw.type)) {
     ElMessage.warning(`不支持的文件格式: ${file.name}`)
-    fileList.value.pop()
+    // 移除无效文件
+    const index = fileList.value.findIndex(f => f.uid === file.uid)
+    if (index > -1) {
+      fileList.value.splice(index, 1)
+    }
     return
   }
 
   // 验证文件大小
   if (file.raw && file.raw.size > 50 * 1024 * 1024) {
     ElMessage.warning(`文件过大: ${file.name}`)
-    fileList.value.pop()
+    // 移除无效文件
+    const index = fileList.value.findIndex(f => f.uid === file.uid)
+    if (index > -1) {
+      fileList.value.splice(index, 1)
+    }
     return
   }
 }
@@ -160,46 +195,343 @@ const handleUpload = async () => {
 </script>
 
 <style scoped lang="scss">
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
 .upload-page {
-  .card-header {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 页面标题 */
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.header-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* 上传卡片 */
+.upload-card {
+  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 32px;
+}
+
+.upload-dragger {
+  width: 100%;
+
+  :deep(.el-upload) {
+    width: 100%;
+  }
+
+  :deep(.el-upload-dragger) {
+    width: 100%;
+    height: 240px;
+    background: #0f172a;
+    border: 2px dashed #1e293b;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+      border-color: #3b82f6;
+      background: #1e293b;
+    }
   }
+}
 
-  .upload-dragger {
-    width: 100%;
+.upload-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
 
-    :deep(.el-upload-dragger) {
-      width: 100%;
-      height: 200px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+.upload-icon {
+  width: 64px;
+  height: 64px;
+  color: #3b82f6;
+}
+
+.upload-text {
+  text-align: center;
+}
+
+.primary-text {
+  font-size: 16px;
+  color: #f1f5f9;
+  margin: 0 0 8px 0;
+
+  em {
+    color: #3b82f6;
+    font-style: normal;
+    cursor: pointer;
+  }
+}
+
+.secondary-text {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* 上传按钮 */
+.upload-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-family: 'JetBrains Mono', monospace;
+
+  &.primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   }
 
-  .upload-actions {
-    margin-top: 20px;
-    text-align: center;
-  }
+  &.secondary {
+    background: #1e293b;
+    color: #94a3b8;
 
-  .upload-progress {
-    margin-top: 20px;
-    padding: 20px;
-    background: #f5f7fa;
-    border-radius: 8px;
-
-    .progress-text {
-      margin-top: 10px;
-      text-align: center;
-      color: #606266;
+    &:hover {
+      background: #334155;
+      color: #f1f5f9;
     }
   }
+}
 
-  .result-card {
-    margin-top: 20px;
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.btn-loading {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 上传进度 */
+.upload-progress {
+  margin-top: 24px;
+  padding: 20px;
+  background: #0f172a;
+  border-radius: 12px;
+  border: 1px solid #1e293b;
+}
+
+.progress-bar {
+  height: 8px;
+  background: #1e293b;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.progress-text {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.progress-count {
+  font-size: 13px;
+  color: #3b82f6;
+  font-weight: 500;
+}
+
+/* 上传结果 */
+.result-card {
+  margin-top: 24px;
+  background: linear-gradient(135deg, #1a1f2e 0%, #0d1117 100%);
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.result-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.result-summary {
+  display: flex;
+  gap: 16px;
+}
+
+.success-count {
+  font-size: 13px;
+  color: #10b981;
+}
+
+.fail-count {
+  font-size: 13px;
+  color: #ef4444;
+}
+
+.result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #0f172a;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
+}
+
+.result-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+
+  &.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  &.fail {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+}
+
+.result-content {
+  flex: 1;
+}
+
+.result-filename {
+  font-size: 14px;
+  color: #f1f5f9;
+  margin-bottom: 4px;
+}
+
+.result-message {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.result-status {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 6px;
+
+  &.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+
+  &.fail {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
   }
 }
 </style>

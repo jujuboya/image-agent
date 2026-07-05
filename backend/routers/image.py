@@ -32,6 +32,7 @@ class ImageResponse(BaseModel):
     id: int
     image_uuid: str
     original_filename: str
+    stored_filename: Optional[str] = None
     file_path: str
     file_size: int
     file_format: str
@@ -124,6 +125,7 @@ async def get_image(
         id=image.id,
         image_uuid=image.image_uuid,
         original_filename=image.original_filename,
+        stored_filename=image.stored_filename,
         file_path=image.file_path,
         file_size=image.file_size,
         file_format=image.file_format,

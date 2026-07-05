@@ -21,12 +21,20 @@ logger = logging.getLogger(__name__)
 
 
 # 创建异步引擎
+def _engine_kwargs(database_url: str) -> dict:
+    kwargs = {"echo": settings.DEBUG}
+    if not database_url.startswith("sqlite"):
+        kwargs.update(
+            pool_size=20,
+            max_overflow=10,
+            pool_pre_ping=False,  # Disabled due to aiomysql 0.2.0 compatibility issue
+        )
+    return kwargs
+
+
 engine = create_async_engine(
     settings.get_database_url,
-    echo=settings.DEBUG,
-    pool_size=20,
-    max_overflow=10,
-    pool_pre_ping=False,  # Disabled due to aiomysql 0.2.0 compatibility issue
+    **_engine_kwargs(settings.get_database_url),
 )
 
 # 创建异步会话工厂
